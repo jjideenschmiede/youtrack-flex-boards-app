@@ -1,0 +1,7 @@
+stages:
+  - validate
+  - quality
+
+include:
+  - local: .gitlab/ci/npm-validate.yml
+  - local: .gitlab/ci/qodana-code-quality.yml

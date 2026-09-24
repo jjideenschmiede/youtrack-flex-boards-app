@@ -1,0 +1,55 @@
+const en = {
+  appTitle: 'Flex Board',
+  selectBoard: 'Select board',
+  selectSprint: 'Select sprint',
+  me: 'Me',
+  cards: (count: number) => `${count} ${count === 1 ? 'card' : 'cards'}`,
+  notShown: (count: number) => `${count} not shown`,
+  filterPlaceholder: 'Filter cards on the board',
+  reload: 'Reload',
+  noColumnField: 'This board has no column field.',
+  noBoards: 'No agile boards found.',
+  renameColumn: 'Rename column',
+  expandSwimlane: 'Expand swimlane',
+  collapseSwimlane: 'Collapse swimlane',
+  uncategorized: 'Uncategorized cards',
+  moveTo: (column: string) => `Move to "${column}"`,
+  selectValueOf: (field: string) => `Select the ${field}:`,
+  selectField: (field: string) => `Select ${field}`,
+  cancel: 'Cancel',
+  save: 'Save',
+  resetToDefault: 'Reset to default',
+  columnName: 'Column name',
+  renameHint: (name: string) => `Default: ${name}. Leave empty to use the default name.`,
+  issueLaneMove: 'Moving cards between issue-based swimlanes is not supported here. Change the parent issue instead.'
+};
+
+type Messages = typeof en;
+
+const de: Messages = {
+  appTitle: 'Flex-Board',
+  selectBoard: 'Board auswählen',
+  selectSprint: 'Sprint auswählen',
+  me: 'Ich',
+  cards: (count: number) => `${count} ${count === 1 ? 'Karte' : 'Karten'}`,
+  notShown: (count: number) => `${count} nicht angezeigt`,
+  filterPlaceholder: 'Karten auf dem Board filtern',
+  reload: 'Neu laden',
+  noColumnField: 'Für dieses Board ist kein Spaltenfeld festgelegt.',
+  noBoards: 'Keine Agile-Boards gefunden.',
+  renameColumn: 'Spalte umbenennen',
+  expandSwimlane: 'Swimlane aufklappen',
+  collapseSwimlane: 'Swimlane zuklappen',
+  uncategorized: 'Karten ohne Kategorie',
+  moveTo: (column: string) => `Nach „${column}“ verschieben`,
+  selectValueOf: (field: string) => `${field} auswählen:`,
+  selectField: (field: string) => `${field} auswählen`,
+  cancel: 'Abbrechen',
+  save: 'Speichern',
+  resetToDefault: 'Zurücksetzen',
+  columnName: 'Spaltenname',
+  renameHint: (name: string) => `Standard: ${name}. Leer lassen, um den Standardnamen zu verwenden.`,
+  issueLaneMove: 'Karten lassen sich hier nicht zwischen ticketbasierten Swimlanes verschieben. Ändern Sie stattdessen das übergeordnete Ticket.'
+};
+
+export const t: Messages = (YTApp.locale ?? '').toLowerCase().startsWith('de') ? de : en;

@@ -1,0 +1,42 @@
+{
+  "name": "youtrack-flex-board-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "YouTrack app with an agile board view that asks for the exact state when a card is dropped into a merged column",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.app.json && vite build && youtrack-app validate dist",
+    "lint": "eslint --report-unused-disable-directives --max-warnings 0",
+    "test": "echo 'no tests'",
+    "pack": "rm -f flex-board.zip && (cd dist && bestzip ../flex-board.zip .)",
+    "upload": "youtrack-app upload dist"
+  },
+  "dependencies": {
+    "@jetbrains/icons": "^5.23.4",
+    "@jetbrains/ring-ui-built": "^7.0.125",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@eslint/compat": "^2.1.1",
+    "@eslint/eslintrc": "^3.3.7",
+    "@eslint/js": "^9.39.5",
+    "@jetbrains/eslint-config": "^6.0.5",
+    "@jetbrains/youtrack-apps-tools": "^0.0.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "bestzip": "^2.2.7",
+    "eslint": "^9.39.5",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "globals": "^17.12.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.1",
+    "vite": "^7.3.6",
+    "vite-plugin-static-copy": "^3.4.0"
+  }
+}

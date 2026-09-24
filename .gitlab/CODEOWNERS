@@ -1,0 +1,4 @@
+# Here you can find all the code owners for the following project.
+* @jjideenschmiede/devops
+.gitlab/ @jjideenschmiede/devops
+.gitlab-ci.yml @jjideenschmiede/devops

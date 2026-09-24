@@ -1,0 +1,17 @@
+npm-validate:
+  stage: validate
+  image: node:22
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm
+  variables:
+    NODE_OPTIONS: --max_old_space_size=4096
+  script:
+    - npm ci --cache .npm --prefer-offline
+    - npm run build

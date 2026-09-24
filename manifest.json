@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/youtrack-app.json",
+  "name": "flex-board",
+  "title": "Flex Board",
+  "description": "Agile board view with custom column names that asks for the exact state when a card is dropped into a merged column.",
+  "version": "1.0.0",
+  "vendor": {
+    "name": "J&J Ideenschmiede GmbH",
+    "url": "https://jj-ideenschmiede.de",
+    "email": "support@jj-ideenschmiede.de"
+  },
+  "icon": "icon.svg",
+  "minYouTrackVersion": "2026.1.0",
+  "url": "https://code.donttrust.net/jjideenschmiede/youtrack-flex-board-app",
+  "widgets": [
+    {
+      "key": "flex-board",
+      "name": "Flex Board",
+      "description": "Agile board with a state picker for merged columns and custom column names",
+      "extensionPoint": "MAIN_MENU_ITEM",
+      "indexPath": "flex-board/index.html",
+      "iconPath": "flex-board/icon.svg",
+      "showHeader": false
+    }
+  ]
+}
