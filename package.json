@@ -1,5 +1,5 @@
 {
-  "name": "youtrack-flex-board-app",
+  "name": "youtrack-flex-boards-app",
   "private": true,
   "version": "1.0.0",
   "description": "YouTrack app with an agile board view that asks for the exact state when a card is dropped into a merged column",
@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.app.json && vite build && youtrack-app validate dist",
     "lint": "eslint --report-unused-disable-directives --max-warnings 0",
     "test": "echo 'no tests'",
-    "pack": "rm -f flex-board.zip && (cd dist && bestzip ../flex-board.zip .)",
+    "pack": "rm -f youtrack-flex-boards-app.zip && (cd dist && bestzip ../youtrack-flex-boards-app.zip .)",
     "upload": "youtrack-app upload dist"
   },
   "dependencies": {

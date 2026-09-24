@@ -93,11 +93,11 @@ export function openIssue(baseUrl: string, idReadable: string): void {
     opened.opener = null;
     return;
   }
-  console.info('[flex-board] opening a new tab was blocked, opening the issue in this tab');
+  console.info('[flex-boards] opening a new tab was blocked, opening the issue in this tab');
   try {
     (window.top ?? window).location.href = url;
   } catch (error) {
-    console.warn('[flex-board] opening the issue failed', error);
+    console.warn('[flex-boards] opening the issue failed', error);
   }
 }
 

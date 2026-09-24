@@ -66,7 +66,7 @@ export function buildLanes(board: Board | null, issues: Issue[]): LaneLayout {
     : null;
 
   if (settings?.enabled) {
-    console.info('[flex-board] swimlanes', settings.$type, settings.field?.name, '->', fieldName);
+    console.info('[flex-boards] swimlanes', settings.$type, settings.field?.name, '->', fieldName);
   }
 
   if (!board || !settings?.enabled || !fieldName) {

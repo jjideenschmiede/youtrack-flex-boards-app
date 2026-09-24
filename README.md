@@ -1,6 +1,6 @@
-# Flex Board für YouTrack
+# Flex-Boards für YouTrack
 
-Dieses Repository enthält die YouTrack-App „Flex Board“ der J&J Ideenschmiede GmbH. Die App ergänzt YouTrack um eine eigene Board-Seite im Hauptmenü, die Spalten, Swimlanes, Kartenfelder und Farben direkt aus den bestehenden Agile Boards übernimmt. Wird eine Karte in eine Spalte gezogen, die mehrere Status zusammenfasst, fragt das Flex Board nach dem genauen Status, statt wie im Standard immer den ersten zu setzen. Administratoren können den Spalten zusätzlich eigene Namen geben.
+Dieses Repository enthält die YouTrack-App „Flex-Boards“ der J&J Ideenschmiede GmbH. Die App ergänzt YouTrack um eine eigene Board-Seite im Hauptmenü, die Spalten, Swimlanes, Kartenfelder und Farben direkt aus den bestehenden Agile Boards übernimmt. Wird eine Karte in eine Spalte gezogen, die mehrere Status zusammenfasst, fragt Flex-Boards nach dem genauen Status, statt wie im Standard immer den ersten zu setzen. Administratoren können den Spalten zusätzlich eigene Namen geben.
 
 ## Funktionen
 
@@ -35,7 +35,7 @@ npm run upload -- --host https://project.ideasfactory.dev --token <token>
 npm run build && npm run pack
 ```
 
-Anschließend in YouTrack unter `Administration > Apps > App hochladen` die generierte `flex-board.zip` auswählen. Der Dateiname muss der App-ID `flex-board` entsprechen, sonst lehnt YouTrack den Upload ab.
+Anschließend in YouTrack unter `Administration > Apps > App hochladen` die generierte `youtrack-flex-boards-app.zip` auswählen.
 
 > [!NOTE]
 > Updates immer über die bestehende App hochladen. Wird die App gelöscht, entfernt YouTrack auch die gespeicherten Spaltennamen.

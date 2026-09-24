@@ -43,7 +43,7 @@ export default defineConfig({
     assetsDir: 'widgets/assets',
     rollupOptions: {
       input: {
-        flexBoard: resolve(__dirname, 'src/widgets/flex-board/index.html')
+        flexBoards: resolve(__dirname, 'src/widgets/flex-boards/index.html')
       }
     }
   }

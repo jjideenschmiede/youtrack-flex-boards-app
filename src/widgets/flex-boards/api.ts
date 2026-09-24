@@ -111,7 +111,7 @@ export async function loadColumnNames(host: HostAPI, boardId: string): Promise<C
       'backend/column-names'
     );
   } catch (error) {
-    console.warn('[flex-board] loading column names failed', error);
+    console.warn('[flex-boards] loading column names failed', error);
     return {};
   }
 }
@@ -125,7 +125,7 @@ export async function loadCanEdit(host: HostAPI): Promise<boolean> {
     );
     return result.canEdit === true;
   } catch (error) {
-    console.info('[flex-board] column renaming not available', error);
+    console.info('[flex-boards] column renaming not available', error);
     return false;
   }
 }
@@ -136,12 +136,12 @@ export async function loadFavoriteBoardIds(host: HostAPI): Promise<Set<string> |
       query: {fields: 'id,favorite', $top: 500}
     });
     if (!boards.some(board => typeof board.favorite === 'boolean')) {
-      console.info('[flex-board] board favorites not available');
+      console.info('[flex-boards] board favorites not available');
       return null;
     }
     return new Set(boards.filter(board => board.favorite).map(board => board.id));
   } catch (error) {
-    console.info('[flex-board] board favorites not available', error);
+    console.info('[flex-boards] board favorites not available', error);
     return null;
   }
 }
@@ -155,10 +155,10 @@ export async function loadCardFields(host: HostAPI, boardId: string): Promise<st
     const names = (board.cardSettings?.fields ?? [])
       .map(entry => entry.field?.name)
       .filter((name): name is string => Boolean(name));
-    console.info('[flex-board] card fields', boardId, names.join(', '));
+    console.info('[flex-boards] card fields', boardId, names.join(', '));
     return board.cardSettings ? names : null;
   } catch (error) {
-    console.info('[flex-board] card settings not available', error);
+    console.info('[flex-boards] card settings not available', error);
     return null;
   }
 }

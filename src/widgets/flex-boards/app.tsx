@@ -69,7 +69,7 @@ interface AppStorage {
   setItem: (key: string, value: string) => Promise<void>;
 }
 
-const STORAGE_KEY = 'flex-board';
+const STORAGE_KEY = 'flex-boards';
 const DEFAULT_CARD_FIELDS = ['Assignee', 'Type', 'Priority'];
 
 interface LaneChange {

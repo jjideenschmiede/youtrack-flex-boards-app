@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/youtrack-app.json",
-  "name": "flex-board",
-  "title": "Flex Board",
+  "name": "flex-boards",
+  "title": "Flex-Boards",
   "description": "Agile board view with custom column names that asks for the exact state when a card is dropped into a merged column.",
   "version": "1.0.0",
   "vendor": {
@@ -11,15 +11,15 @@
   },
   "icon": "icon.svg",
   "minYouTrackVersion": "2026.1.0",
-  "url": "https://code.donttrust.net/jjideenschmiede/youtrack-flex-board-app",
+  "url": "https://code.donttrust.net/jjideenschmiede/youtrack-flex-boards-app",
   "widgets": [
     {
-      "key": "flex-board",
-      "name": "Flex Board",
+      "key": "flex-boards",
+      "name": "Flex-Boards",
       "description": "Agile board with a state picker for merged columns and custom column names",
       "extensionPoint": "MAIN_MENU_ITEM",
-      "indexPath": "flex-board/index.html",
-      "iconPath": "flex-board/icon.svg",
+      "indexPath": "flex-boards/index.html",
+      "iconPath": "flex-boards/icon.svg",
       "showHeader": false
     }
   ]

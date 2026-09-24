@@ -1,5 +1,5 @@
 const en = {
-  appTitle: 'Flex Board',
+  appTitle: 'Flex Boards',
   selectBoard: 'Select board',
   selectSprint: 'Select sprint',
   me: 'Me',
@@ -27,7 +27,7 @@ const en = {
 type Messages = typeof en;
 
 const de: Messages = {
-  appTitle: 'Flex-Board',
+  appTitle: 'Flex-Boards',
   selectBoard: 'Board auswählen',
   selectSprint: 'Sprint auswählen',
   me: 'Ich',
