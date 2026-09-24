@@ -21,14 +21,17 @@ import {
   loadFavoriteBoardIds,
   loadColumnNames,
   loadIssueFields,
-  loadSprintIssues,
+  loadIssue,
+  loadIssueDetails,
+  loadSprintIndex,
   saveColumnName,
   saveIssueFields
 } from './api';
 import {BoardView} from './board-view';
 import {t} from './i18n';
 import {buildLanes} from './lanes';
-import {fieldOf, isEmpty, valueNameOf, valuesOf} from './fields';
+import {appStorage, cacheKey, fromCache, readIndexCache, toCache, writeIndexCache} from './cache';
+import {CELL_PAGE_SIZE, fieldOf, isEmpty, valueNameOf, valuesOf} from './fields';
 import {PickerDialog} from './picker-dialog';
 import {RenameDialog, type RenameRequest} from './rename-dialog';
 import type {
@@ -64,21 +67,14 @@ interface StoredSelection {
   sprintId?: string | null;
 }
 
-interface AppStorage {
-  getItem: (key: string) => Promise<string | null>;
-  setItem: (key: string, value: string) => Promise<void>;
-}
-
 const STORAGE_KEY = 'flex-boards';
+const DETAIL_BATCH_SIZE = 100;
+const PROGRESS_DELAY_MS = 500;
 const DEFAULT_CARD_FIELDS = ['Assignee', 'Type', 'Priority'];
 
 interface LaneChange {
   fieldName: string;
   value: string | null;
-}
-
-function storageOf(host: HostAPI): AppStorage | null {
-  return (host as HostAPI & {storage?: AppStorage}).storage ?? null;
 }
 
 function bundleValuesOf(field: IssueFieldDetails): FieldValue[] {
@@ -123,6 +119,51 @@ function laneFieldValue(field: IssueCustomField | null, name: string | null): un
   return multi ? [value] : value;
 }
 
+function useDelayedFlag(active: boolean, delay: number): boolean {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (!active) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setShown(true), delay);
+    return () => {
+      window.clearTimeout(timer);
+      setShown(false);
+    };
+  }, [active, delay]);
+  return active && shown;
+}
+
+function visibleIssueIds(board: Board, issues: Issue[]): Set<string> {
+  const columnField = board.columnSettings?.field?.name;
+  const visible = new Set<string>();
+  if (!columnField) {
+    return visible;
+  }
+  const columns = board.columnSettings?.columns ?? [];
+  const layout = buildLanes(board, issues);
+  const perCell = new Map<string, number>();
+  layout.cards.forEach(issue => {
+    const value = valueNameOf(issue, columnField) ?? '';
+    const column = columns.find(candidate => valuesOf(candidate).includes(value));
+    const laneKey = layout.laneOf(issue);
+    if (!column || laneKey === null) {
+      return;
+    }
+    const cell = `${laneKey}|${column.id}`;
+    const count = perCell.get(cell) ?? 0;
+    if (count < CELL_PAGE_SIZE) {
+      visible.add(issue.id);
+    }
+    perCell.set(cell, count + 1);
+  });
+  return visible;
+}
+
+function samePlacement(a: Issue, b: Issue, fieldNames: (string | null)[]): boolean {
+  return fieldNames.every(name => !name || valueNameOf(a, name) === valueNameOf(b, name));
+}
+
 function sortedColumns(board: Board | null): Column[] {
   return [...(board?.columnSettings?.columns ?? [])].sort((a, b) => a.ordinal - b.ordinal);
 }
@@ -146,14 +187,20 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [values, setValues] = useState<Record<string, ValueInfo>>({});
   const [columnNames, setColumnNames] = useState<ColumnNames>({});
-  const [baseUrl, setBaseUrl] = useState('');
+  const [baseUrl, setBaseUrl] = useState(() => (document.referrer ? new URL(document.referrer).origin : ''));
   const [canEdit, setCanEdit] = useState(false);
   const [cardFieldSetting, setCardFieldSetting] = useState<string[] | null>(null);
+  const cardFieldsRequest = useRef<Promise<string[] | null>>(Promise.resolve(null));
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [laneLabels, setLaneLabels] = useState<{field: string; labels: Record<string, string>} | null>(null);
   const [query, setQuery] = useState('');
   const [favorites, setFavorites] = useState<Set<string> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [detailProgress, setDetailProgress] = useState<{loaded: number; total: number} | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const showRefreshing = useDelayedFlag(refreshing, PROGRESS_DELAY_MS);
+  const showDetailProgress = useDelayedFlag(detailProgress !== null, PROGRESS_DELAY_MS);
+  const loadGeneration = useRef(0);
   const [busy, setBusy] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [picker, setPicker] = useState<PickerRequest | null>(null);
@@ -182,30 +229,148 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
     return columns.find(column => valuesOf(column).includes(value ?? '')) ?? null;
   }, [columns, columnField]);
 
+  const loadValueInfo = useCallback(async (target: Board, sampleIssueId: string) => {
+    const fieldName = target.columnSettings?.field?.name;
+    try {
+      const fields = await loadIssueFields(host, sampleIssueId);
+      const field = fields.find(candidate => candidate.name === fieldName);
+      const info: Record<string, ValueInfo> = {};
+      (field ? bundleValuesOf(field) : []).forEach(value => {
+        if (value.name) {
+          info[value.name] = {label: value.localizedName || value.name, color: value.color ?? null};
+        }
+      });
+      setValues(info);
+    } catch {
+      setValues({});
+    }
+  }, [host]);
+
+  const mergeDetails = useCallback((details: Issue[]) => {
+    const byId = new Map(details.map(issue => [issue.id, issue]));
+    setIssues(previous => previous.map(issue => byId.get(issue.id) ?? issue));
+  }, []);
+
+  const loadDetailsInBackground = useCallback(async (
+    target: Board,
+    index: Issue[],
+    generation: number,
+    key: string,
+    laneField: string | null
+  ) => {
+    const visible = visibleIssueIds(target, index);
+    const isVisible = (issue: Issue) => visible.has(issue.id);
+    const groups: [Issue[], boolean, boolean][] = [
+      [index.filter(issue => isVisible(issue) && !issue.resolved), false, true],
+      [index.filter(issue => isVisible(issue) && issue.resolved), true, true],
+      [index.filter(issue => !isVisible(issue) && !issue.resolved), false, false],
+      [index.filter(issue => !isVisible(issue) && issue.resolved), true, false]
+    ];
+    const total = index.length;
+    const visibleDetails: Issue[] = [];
+    let loaded = 0;
+    let cacheWritten = false;
+    setDetailProgress({loaded, total});
+    try {
+      for (const [group, resolved, visibleGroup] of groups) {
+        if (!visibleGroup && !cacheWritten) {
+          cacheWritten = true;
+          const cardFields = await cardFieldsRequest.current ?? DEFAULT_CARD_FIELDS;
+          writeIndexCache(host, key, toCache(target, index, target.columnSettings?.field?.name ?? '', laneField, visibleDetails, [
+            ...cardFields,
+            ...(target.colorCoding?.prototype?.name ? [target.colorCoding.prototype.name] : []),
+            ...(target.estimationField?.name ? [target.estimationField.name] : [])
+          ]));
+        }
+        for (let start = 0; start < group.length; start += DETAIL_BATCH_SIZE) {
+          const batch = group.slice(start, start + DETAIL_BATCH_SIZE);
+          const details = await loadIssueDetails(host, batch.map(issue => issue.idReadable), resolved);
+          if (generation !== loadGeneration.current) {
+            return;
+          }
+          if (visibleGroup) {
+            visibleDetails.push(...details);
+          }
+          mergeDetails(details);
+          loaded += batch.length;
+          setDetailProgress({loaded, total});
+        }
+      }
+      if (!cacheWritten) {
+        const cardFields = await cardFieldsRequest.current ?? DEFAULT_CARD_FIELDS;
+        writeIndexCache(host, key, toCache(target, index, target.columnSettings?.field?.name ?? '', laneField, visibleDetails, [
+            ...cardFields,
+            ...(target.colorCoding?.prototype?.name ? [target.colorCoding.prototype.name] : []),
+            ...(target.estimationField?.name ? [target.estimationField.name] : [])
+          ]));
+      }
+    } catch (error) {
+      console.warn('[flex-boards] loading card details failed', errorText(error));
+    } finally {
+      if (generation === loadGeneration.current) {
+        setDetailProgress(null);
+      }
+    }
+  }, [host, mergeDetails]);
+
   const loadIssues = useCallback(async (target: Board, targetSprintId: string | null) => {
+    const generation = ++loadGeneration.current;
+    setDetailProgress(null);
     if (!targetSprintId || !target.columnSettings?.field) {
       setIssues([]);
       return;
     }
-    const loaded = await loadSprintIssues(host, target.id, targetSprintId);
-    setIssues(loaded);
 
-    const fieldName = target.columnSettings.field.name;
-    if (loaded.length > 0) {
-      try {
-        const fields = await loadIssueFields(host, loaded[0].id);
-        const field = fields.find(candidate => candidate.name === fieldName);
-        const info: Record<string, ValueInfo> = {};
-        (field ? bundleValuesOf(field) : []).forEach(value => {
-          if (value.name) {
-            info[value.name] = {label: value.localizedName || value.name, color: value.color ?? null};
-          }
-        });
-        setValues(info);
-      } catch {
-        setValues({});
+    const key = cacheKey(target.id, targetSprintId);
+    const cached = await readIndexCache(host, key);
+    if (generation !== loadGeneration.current) {
+      return;
+    }
+    if (cached) {
+      setIssues(fromCache(cached));
+      setLoading(false);
+      setRefreshing(true);
+    }
+
+    const started = performance.now();
+    let index: Issue[];
+    try {
+      index = await loadSprintIndex(host, target.id, targetSprintId);
+    } finally {
+      if (generation === loadGeneration.current) {
+        setRefreshing(false);
       }
     }
+    console.info('[flex-boards] sprint index', `${index.length} issues`, `${Math.round(performance.now() - started)} ms`,
+      cached ? 'shown from cache first' : 'no cache');
+    if (generation !== loadGeneration.current) {
+      return;
+    }
+
+    const columnField = target.columnSettings.field.name;
+    const laneField = buildLanes(target, index).fieldName;
+    setIssues(previous => {
+      const shown = new Map(previous.filter(issue => issue.detailed || issue.description !== undefined)
+        .map(issue => [issue.id, issue]));
+      return index.map(issue => {
+        const kept = shown.get(issue.id);
+        return kept && samePlacement(kept, issue, [columnField, laneField]) ? kept : issue;
+      });
+    });
+    if (!cached) {
+      writeIndexCache(host, key, toCache(target, index, columnField, laneField));
+    }
+    if (index.length > 0) {
+      await loadValueInfo(target, index[0].id);
+    }
+    if (generation === loadGeneration.current) {
+      loadDetailsInBackground(target, index, generation, key, laneField);
+    }
+  }, [host, loadValueInfo, loadDetailsInBackground]);
+
+  const refreshIssue = useCallback(async (issueId: string) => {
+    const fresh = await loadIssue(host, issueId);
+    setIssues(previous => previous.map(issue => (issue.id === issueId ? fresh : issue)));
   }, [host]);
 
   const reload = useCallback(async () => {
@@ -222,20 +387,23 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
     }
   }, [board, sprintId, loadIssues, showError]);
 
-  const selectBoard = useCallback(async (target: Board, preferredSprint?: string | null) => {
+  const selectBoard = useCallback(async (target: Board, preferredSprint?: string | null, keepVisible = false) => {
     const nextSprint = defaultSprintId(target, preferredSprint);
+    cardFieldsRequest.current = loadCardFields(host, target.id);
     setBoardId(target.id);
     setSprintId(nextSprint);
-    setIssues([]);
-    setValues({});
-    setCardFieldSetting(null);
-    setCollapsed(new Set());
-    setLoading(true);
+    if (!keepVisible) {
+      setIssues([]);
+      setValues({});
+      setCardFieldSetting(null);
+      setCollapsed(new Set());
+      setLoading(true);
+    }
     try {
       const [names, cardFields, storedCollapsed] = await Promise.all([
         loadColumnNames(host, target.id),
-        loadCardFields(host, target.id),
-        storageOf(host)?.getItem(`${STORAGE_KEY}:collapsed:${target.id}`).catch(() => null) ?? Promise.resolve(null),
+        cardFieldsRequest.current,
+        appStorage(host)?.getItem(`${STORAGE_KEY}:collapsed:${target.id}`).catch(() => null) ?? Promise.resolve(null),
         loadIssues(target, nextSprint)
       ]);
       setColumnNames(names);
@@ -245,7 +413,7 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
       } catch {
         setCollapsed(new Set());
       }
-      await storageOf(host)?.setItem(STORAGE_KEY, JSON.stringify({boardId: target.id, sprintId: nextSprint}));
+      await appStorage(host)?.setItem(STORAGE_KEY, JSON.stringify({boardId: target.id, sprintId: nextSprint}));
     } catch (error) {
       showError(error);
     } finally {
@@ -258,22 +426,35 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
       try {
         loadCanEdit(host).then(setCanEdit);
         loadFavoriteBoardIds(host).then(setFavorites);
-        const [loadedBoards, url] = await Promise.all([loadBoards(host), loadBaseUrl(host)]);
+        const boardsRequest = Promise.all([loadBoards(host), loadBaseUrl(host)]);
+
+        let saved: StoredSelection = {};
+        try {
+          const raw = await appStorage(host)?.getItem(STORAGE_KEY);
+          saved = raw ? JSON.parse(raw) : {};
+        } catch {
+          saved = {};
+        }
+        const cached = saved.boardId && saved.sprintId
+          ? await readIndexCache(host, cacheKey(saved.boardId, saved.sprintId))
+          : null;
+        if (cached) {
+          setBoards(previous => (previous.length > 0 ? previous : [cached.board]));
+          setBoardId(cached.board.id);
+          setSprintId(saved.sprintId ?? null);
+          setIssues(fromCache(cached));
+          setLoading(false);
+        }
+
+        const [loadedBoards, url] = await boardsRequest;
         setBoards(loadedBoards);
         setBaseUrl(url);
         if (loadedBoards.length === 0) {
           setLoading(false);
           return;
         }
-        let saved: StoredSelection = {};
-        try {
-          const raw = await storageOf(host)?.getItem(STORAGE_KEY);
-          saved = raw ? JSON.parse(raw) : {};
-        } catch {
-          saved = {};
-        }
         const initial = loadedBoards.find(candidate => candidate.id === saved.boardId) ?? loadedBoards[0];
-        await selectBoard(initial, saved.sprintId);
+        await selectBoard(initial, saved.sprintId, Boolean(cached) && initial.id === cached?.board.id);
       } catch (error) {
         showError(error);
         setLoading(false);
@@ -446,7 +627,7 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
     setBusy(true);
     try {
       if (await save(issue, valueName, laneChange)) {
-        await loadIssues(board, sprintId);
+        await refreshIssue(issue.id);
       }
     } catch (error) {
       showError(error, issue.idReadable);
@@ -454,7 +635,7 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
       setBusy(false);
     }
   }, [issues, draggedId, busy, board, columnOfIssue, layout, host, openPicker, columnTitle, columnField, labelOf,
-    values, save, loadIssues, sprintId, showError]);
+    values, save, refreshIssue, showError]);
 
   const onRename = useCallback((column: Column) => {
     setRename({
@@ -546,7 +727,7 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
         next.add(laneKey);
       }
       if (board) {
-        storageOf(host)?.setItem(`${STORAGE_KEY}:collapsed:${board.id}`, JSON.stringify([...next]))
+        appStorage(host)?.setItem(`${STORAGE_KEY}:collapsed:${board.id}`, JSON.stringify([...next]))
           .catch(() => undefined);
       }
       return next;
@@ -603,7 +784,7 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
                   }
                   const nextSprint = String(item.key);
                   setSprintId(nextSprint);
-                  storageOf(host)?.setItem(STORAGE_KEY, JSON.stringify({boardId: board.id, sprintId: nextSprint}))
+                  appStorage(host)?.setItem(STORAGE_KEY, JSON.stringify({boardId: board.id, sprintId: nextSprint}))
                     .catch(() => undefined);
                   setLoading(true);
                   loadIssues(board, nextSprint).catch(showError).finally(() => setLoading(false));
@@ -613,6 +794,19 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
           )}
           {(loading || busy) && <LoaderInline className="topbar__loader"/>}
         </nav>
+
+        {showRefreshing && (
+          <span className="topbar__background">
+            <LoaderInline/>
+            {t.refreshing}
+          </span>
+        )}
+        {!refreshing && showDetailProgress && detailProgress !== null && (
+          <span className="topbar__background">
+            <LoaderInline/>
+            {t.loadingDetails(detailProgress.loaded, detailProgress.total)}
+          </span>
+        )}
 
         <div className="topbar__actions">
           <span className="topbar__info">

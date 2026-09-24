@@ -4,7 +4,7 @@ import Tooltip from '@jetbrains/ring-ui-built/components/tooltip/tooltip';
 import chevronDownIcon from '@jetbrains/icons/chevron-down';
 import chevronRightIcon from '@jetbrains/icons/chevron-right';
 import pencilIcon from '@jetbrains/icons/pencil';
-import {issueUrl, openIssue} from './fields';
+import {CELL_PAGE_SIZE, issueUrl, openIssue} from './fields';
 import {IssueCard} from './issue-card';
 import type {Column, Issue, Lane} from './types';
 import {t} from './i18n';
@@ -48,6 +48,9 @@ interface CellProps {
 
 const Cell: React.FunctionComponent<CellProps> = ({column, lane, issues, showState, gridColumn, gridRow, onDrop, card}) => {
   const [isTarget, setIsTarget] = useState(false);
+  const [limit, setLimit] = useState(CELL_PAGE_SIZE);
+  const visible = issues.slice(0, limit);
+  const remaining = issues.length - visible.length;
 
   return (
     <div
@@ -69,7 +72,7 @@ const Cell: React.FunctionComponent<CellProps> = ({column, lane, issues, showSta
         onDrop(column, lane);
       }}
     >
-      {issues.map(issue => (
+      {visible.map(issue => (
         <IssueCard
           key={issue.id}
           issue={issue}
@@ -83,6 +86,14 @@ const Cell: React.FunctionComponent<CellProps> = ({column, lane, issues, showSta
           onDragEnd={card.onDragEnd}
         />
       ))}
+      {remaining > 0 && (
+        <Button
+          className="cell__more"
+          onClick={() => setLimit(current => current + CELL_PAGE_SIZE)}
+        >
+          {t.showMore(Math.min(remaining, CELL_PAGE_SIZE))}
+        </Button>
+      )}
     </div>
   );
 };

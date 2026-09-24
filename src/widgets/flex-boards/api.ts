@@ -19,6 +19,25 @@ const BOARD_FIELDS = [
   'hideOrphansSwimlane'
 ].join(',');
 
+const INDEX_FIELDS = [
+  'id',
+  'idReadable',
+  'summary',
+  'resolved',
+  'parent(issues(id))',
+  'customFields($type,name,value($type,name,login,fullName))'
+].join(',');
+
+const RESOLVED_DETAIL_FIELDS = [
+  'id',
+  'idReadable',
+  'summary',
+  'resolved',
+  `tags(id,name,${COLOR})`,
+  'parent(issues(id))',
+  `customFields($type,name,value($type,id,name,localizedName,login,fullName,avatarUrl,presentation,text,${COLOR}))`
+].join(',');
+
 const ISSUE_FIELDS = [
   'id',
   'idReadable',
@@ -51,11 +70,27 @@ export async function loadBoards(host: HostAPI): Promise<Board[]> {
   return boards.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export async function loadSprintIssues(host: HostAPI, boardId: string, sprintId: string): Promise<Issue[]> {
+export async function loadSprintIndex(host: HostAPI, boardId: string, sprintId: string): Promise<Issue[]> {
   const sprint = await host.fetchYouTrack<{issues?: Issue[]}>(`agiles/${boardId}/sprints/${sprintId}`, {
-    query: {fields: `issues(${ISSUE_FIELDS})`}
+    query: {fields: `issues(${INDEX_FIELDS})`}
   });
-  return sprint.issues ?? [];
+  return (sprint.issues ?? []).map(issue => ({...issue, tags: issue.tags ?? [], detailed: false}));
+}
+
+export async function loadIssueDetails(host: HostAPI, idsReadable: string[], resolved: boolean): Promise<Issue[]> {
+  const issues = await host.fetchYouTrack<Issue[]>('issues', {
+    query: {
+      query: `issue id: ${idsReadable.join(', ')}`,
+      fields: resolved ? RESOLVED_DETAIL_FIELDS : ISSUE_FIELDS,
+      $top: idsReadable.length
+    }
+  });
+  return issues.map(issue => ({...issue, detailed: true}));
+}
+
+export async function loadIssue(host: HostAPI, issueId: string): Promise<Issue> {
+  const issue = await host.fetchYouTrack<Issue>(`issues/${issueId}`, {query: {fields: ISSUE_FIELDS}});
+  return {...issue, detailed: true};
 }
 
 export function loadIssueFields(host: HostAPI, issueId: string): Promise<IssueFieldDetails[]> {

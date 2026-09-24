@@ -126,6 +126,17 @@ body {
   margin-left: 8px;
 }
 
+.topbar__background {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  margin-left: 16px;
+  color: var(--ring-secondary-color);
+  font-size: var(--ring-font-size-smaller);
+  white-space: nowrap;
+}
+
 .topbar__actions {
   display: flex;
   align-items: center;
@@ -270,6 +281,10 @@ body {
   padding: 4px 8px 8px;
   border: 1px solid transparent;
   border-radius: var(--ring-border-radius-large);
+}
+
+.cell__more {
+  align-self: center;
 }
 
 .cell_target {

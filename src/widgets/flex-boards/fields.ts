@@ -1,5 +1,7 @@
 import type {Column, CustomFieldValue, FieldColor, FieldValue, Issue, IssueCustomField} from './types';
 
+export const CELL_PAGE_SIZE = 50;
+
 export function fieldOf(issue: Issue, name: string): IssueCustomField | null {
   return issue.customFields.find(field => field.name === name) ?? null;
 }

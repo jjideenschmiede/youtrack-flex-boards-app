@@ -48,6 +48,7 @@ export interface Issue {
   tags: IssueTag[];
   customFields: IssueCustomField[];
   parent?: {issues?: {id: string}[]} | null;
+  detailed?: boolean;
 }
 
 export interface Column {
