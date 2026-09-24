@@ -275,12 +275,13 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
       for (const [group, resolved, visibleGroup] of groups) {
         if (!visibleGroup && !cacheWritten) {
           cacheWritten = true;
-          const cardFields = await cardFieldsRequest.current ?? DEFAULT_CARD_FIELDS;
+          const boardCardFields = await cardFieldsRequest.current;
+          const cardFields = boardCardFields ?? DEFAULT_CARD_FIELDS;
           writeIndexCache(host, key, toCache(target, index, target.columnSettings?.field?.name ?? '', laneField, visibleDetails, [
             ...cardFields,
             ...(target.colorCoding?.prototype?.name ? [target.colorCoding.prototype.name] : []),
             ...(target.estimationField?.name ? [target.estimationField.name] : [])
-          ]));
+          ], boardCardFields));
         }
         for (let start = 0; start < group.length; start += DETAIL_BATCH_SIZE) {
           const batch = group.slice(start, start + DETAIL_BATCH_SIZE);
@@ -297,12 +298,13 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
         }
       }
       if (!cacheWritten) {
-        const cardFields = await cardFieldsRequest.current ?? DEFAULT_CARD_FIELDS;
+        const boardCardFields = await cardFieldsRequest.current;
+        const cardFields = boardCardFields ?? DEFAULT_CARD_FIELDS;
         writeIndexCache(host, key, toCache(target, index, target.columnSettings?.field?.name ?? '', laneField, visibleDetails, [
             ...cardFields,
             ...(target.colorCoding?.prototype?.name ? [target.colorCoding.prototype.name] : []),
             ...(target.estimationField?.name ? [target.estimationField.name] : [])
-          ]));
+          ], boardCardFields));
       }
     } catch (error) {
       console.warn('[flex-boards] loading card details failed', errorText(error));
@@ -328,6 +330,7 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
     }
     if (cached) {
       setIssues(fromCache(cached));
+      setCardFieldSetting(cached.cardFields);
       setLoading(false);
       setRefreshing(true);
     }
@@ -358,7 +361,8 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
       });
     });
     if (!cached) {
-      writeIndexCache(host, key, toCache(target, index, columnField, laneField));
+      cardFieldsRequest.current.then(boardCardFields =>
+        writeIndexCache(host, key, toCache(target, index, columnField, laneField, [], [], boardCardFields)));
     }
     if (index.length > 0) {
       await loadValueInfo(target, index[0].id);
@@ -443,6 +447,7 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
           setBoardId(cached.board.id);
           setSprintId(saved.sprintId ?? null);
           setIssues(fromCache(cached));
+          setCardFieldSetting(cached.cardFields);
           setLoading(false);
         }
 

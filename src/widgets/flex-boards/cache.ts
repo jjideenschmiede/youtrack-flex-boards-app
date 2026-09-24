@@ -4,7 +4,7 @@ import type {Board, FieldValue, Issue, IssueCustomField} from './types';
 
 const CACHE_PREFIX = 'flex-boards:index:';
 const META_KEY = 'flex-boards:index-meta';
-const CACHE_VERSION = 4;
+const CACHE_VERSION = 5;
 const HOST_STORAGE_BUDGET = 800000;
 const BROWSER_STORAGE_BUDGET = 4000000;
 const DESCRIPTION_LENGTH = 200;
@@ -28,6 +28,7 @@ export interface CachedIndex {
   laneType: string | null;
   rows: CachedRow[];
   details: Issue[];
+  cardFields: string[] | null;
 }
 
 type CacheMeta = Record<string, {size: number; usedAt: number}>;
@@ -117,7 +118,8 @@ export function toCache(
   columnField: string,
   laneField: string | null,
   details: Issue[] = [],
-  keepFields: string[] = []
+  keepFields: string[] = [],
+  cardFields: string[] | null = null
 ): CachedIndex {
   const kept = new Set([columnField, ...keepFields, ...(laneField ? [laneField] : [])]);
   const sample = issues.find(issue => fieldOf(issue, columnField));
@@ -138,7 +140,8 @@ export function toCache(
       laneField ? valueKey(fieldOf(issue, laneField)) : null,
       issue.parent?.issues?.[0]?.id ?? null
     ]),
-    details: details.map(issue => trimIssue(issue, kept))
+    details: details.map(issue => trimIssue(issue, kept)),
+    cardFields
   };
 }
 
