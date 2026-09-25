@@ -1,5 +1,5 @@
 name: Feature Request
-description: Create a new feature request to help us improve.
+description: Suggest an idea for the Flex-Boards app.
 title: "feat: "
 labels: ["feature"]
 assignees:
@@ -8,12 +8,30 @@ body:
   - type: markdown
     attributes:
       value: |
-        Bitte fülle alle Felder zu dem Feature Request sorgfältig aus, sodass diese unter besten Voraussetzungen bearbeitet werden können.
+        Thanks for your idea! Please describe what you would like to achieve, so we can find the best solution together.
   - type: textarea
-    id: which-feature
+    id: problem
     attributes:
-      label: Welches Feature möchtest du vorschlagen?
-      description: Beschreibe das Feature so detailliert wie möglich.
-      placeholder: "Ich möchte das Feature, weil..."
+      label: Which problem would the feature solve?
+      description: Describe the situation in your team or on your board where Flex-Boards doesn't help you yet.
+      placeholder: We combine several states in one column, and it's hard to see …
     validations:
       required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: How should the feature work?
+      description: Describe the solution you have in mind, as detailed as possible.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Did you consider other solutions, for example a setting on the agile board or a workflow?
+  - type: input
+    id: youtrack-version
+    attributes:
+      label: YouTrack version
+      description: You can find the version and build under Help at the bottom of the YouTrack sidebar.
+      placeholder: 2026.2.19197

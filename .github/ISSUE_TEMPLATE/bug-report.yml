@@ -1,5 +1,5 @@
 name: Bug Report
-description: Create a report to help us improve.
+description: Report a problem with the Flex-Boards app in YouTrack.
 title: "fix: "
 labels: ["fix"]
 assignees:
@@ -8,12 +8,101 @@ body:
   - type: markdown
     attributes:
       value: |
-        Bitte fülle alle Felder zu deinem Bug Report sorgfältig aus, sodass diese unter besten Voraussetzungen bearbeitet werden können.
+        Thanks for taking the time to report a bug! Please fill out the fields below as precisely as possible, so we can reproduce and fix the problem quickly.
+
+        > [!IMPORTANT]
+        > Please remove any confidential data such as issue summaries, user names or URLs of your YouTrack instance from screenshots and logs.
   - type: textarea
-    id: which-error
+    id: description
     attributes:
-      label: Welcher Fehler ist aufgetreten?
-      description: Beschreibe den Fehler so detailliert wie möglich.
-      placeholder: "Ein Fehler ist aufgetreten, weil..."
+      label: What happened?
+      description: Describe the problem as detailed as possible.
+      placeholder: When I drop a card into a combined column, the state picker does not open and …
     validations:
       required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce the problem?
+      placeholder: |
+        1. Open Flex-Boards and select the board …
+        2. Drag a card from "Open" to "In Progress, Waiting"
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen instead?
+    validations:
+      required: true
+  - type: input
+    id: youtrack-version
+    attributes:
+      label: YouTrack version
+      description: You can find the version and build under Help at the bottom of the YouTrack sidebar.
+      placeholder: 2026.2.19197
+    validations:
+      required: true
+  - type: dropdown
+    id: hosting
+    attributes:
+      label: YouTrack hosting
+      options:
+        - YouTrack Cloud
+        - YouTrack Server
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: Flex-Boards version
+      description: You can find the app version under Administration > Apps.
+      placeholder: 1.0.16
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      multiple: true
+      options:
+        - Loading or displaying the board
+        - Moving cards and the state picker
+        - Required fields when moving cards
+        - Renaming columns
+        - Swimlanes
+        - Sprints
+        - Card fields, tags or colors
+        - Card filter
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: board-setup
+    attributes:
+      label: Board setup
+      description: Tell us how the affected agile board is configured, for example the column field, combined columns, the swimlane type, sprints and workflows that run when the state changes.
+      placeholder: |
+        Columns: State, "In Progress" and "Waiting" combined in one column
+        Swimlanes: by Priority
+        Sprints: enabled
+        Workflows: a workflow requires the Resolution when an issue is closed
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      placeholder: Chrome 140 on macOS
+  - type: textarea
+    id: logs
+    attributes:
+      label: Browser console
+      description: Open the developer tools of your browser, reproduce the problem and paste the messages that start with `[flex-boards]` and any errors.
+      render: shell
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Add screenshots or a short screen recording if they help to understand the problem.
