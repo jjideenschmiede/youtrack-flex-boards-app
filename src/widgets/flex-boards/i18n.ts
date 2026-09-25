@@ -1,5 +1,5 @@
 const en = {
-  appTitle: 'Flex Boards',
+  appTitle: 'Flex-Boards',
   selectBoard: 'Select board',
   selectSprint: 'Select sprint',
   me: 'Me',
