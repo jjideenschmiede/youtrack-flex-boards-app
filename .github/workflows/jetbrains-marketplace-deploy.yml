@@ -1,0 +1,43 @@
+name: JetBrains Marketplace Deploy
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: marketplace
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build YouTrack App
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
+        run: npm run build
+
+      - name: Pack YouTrack App
+        run: npm run pack
+
+      - name: Upload to JetBrains Marketplace
+        env:
+          MARKETPLACE_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
+          PLUGIN_ID: ${{ vars.JETBRAINS_MARKETPLACE_PLUGIN_ID }}
+          CHANNEL: ${{ github.event.release.prerelease && 'eap' || '' }}
+        run: |
+          curl --fail-with-body \
+            -H "Authorization: Bearer $MARKETPLACE_TOKEN" \
+            -F "pluginId=$PLUGIN_ID" \
+            -F "channel=$CHANNEL" \
+            -F "file=@youtrack-flex-boards-app.zip" \
+            https://plugins.jetbrains.com/api/updates/upload
