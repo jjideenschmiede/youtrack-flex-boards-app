@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check version
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          MANIFEST=$(node -p "require('./manifest.json').version")
+          if [ "$TAG" != "$MANIFEST" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match manifest version $MANIFEST"
+            exit 1
+          fi
+          if [[ "$TAG" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build YouTrack App
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
+        run: npm run build
+
+      - name: Pack YouTrack App
+        run: npm run pack
+
+      - name: Write release notes
+        run: |
+          PREVIOUS=$(git describe --tags --abbrev=0 "$GITHUB_REF_NAME^" 2>/dev/null || true)
+          RANGE="${PREVIOUS:+$PREVIOUS..}$GITHUB_REF_NAME"
+          section() {
+            local lines
+            lines=$(git log "$RANGE" --no-merges --pretty='%s' | grep -E "$2" | sed -E 's/^[a-z]+(\([^)]*\))?!?: /- /' || true)
+            if [ -n "$lines" ]; then
+              printf '## %s\n\n%s\n\n' "$1" "$lines" >> release-notes.md
+            fi
+          }
+          : > release-notes.md
+          section '🚩 Breaking Changes' '^[a-z]+(\([^)]*\))?!: '
+          section '🚀 Features' '^feat(\([^)]*\))?: '
+          section '🐛 Fixes' '^fix(\([^)]*\))?: '
+          section '⚡ Performance' '^perf(\([^)]*\))?: '
+          if [ -n "$PREVIOUS" ]; then
+            echo "**Full Changelog**: https://github.com/$GITHUB_REPOSITORY/compare/$PREVIOUS...$GITHUB_REF_NAME" >> release-notes.md
+          fi
+          cat release-notes.md
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" youtrack-flex-boards-app.zip \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file release-notes.md \
+            $([ "$PRERELEASE" = "true" ] && echo "--prerelease")
+
+  marketplace:
+    needs: release
+    runs-on: ubuntu-latest
+    environment: marketplace
+    permissions:
+      contents: read
+    steps:
+      - name: Download release asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern youtrack-flex-boards-app.zip
+
+      - name: Upload to JetBrains Marketplace
+        env:
+          MARKETPLACE_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
+          PLUGIN_ID: ${{ vars.JETBRAINS_MARKETPLACE_PLUGIN_ID }}
+          CHANNEL: ${{ needs.release.outputs.prerelease == 'true' && 'eap' || '' }}
+        run: |
+          curl --fail-with-body \
+            -H "Authorization: Bearer $MARKETPLACE_TOKEN" \
+            -F "pluginId=$PLUGIN_ID" \
+            -F "channel=$CHANNEL" \
+            -F "file=@youtrack-flex-boards-app.zip" \
+            https://plugins.jetbrains.com/api/updates/upload
