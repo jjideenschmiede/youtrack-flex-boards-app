@@ -376,6 +376,11 @@ body {
   display: none;
 }
 
+.card__footer > span {
+  display: inline-flex;
+  align-items: center;
+}
+
 .card__user {
   display: inline-flex;
   align-items: center;
