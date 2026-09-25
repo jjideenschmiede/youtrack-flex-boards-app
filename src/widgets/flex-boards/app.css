@@ -444,22 +444,44 @@ body {
   color: var(--ring-secondary-color);
 }
 
-.picker__list {
-  padding: calc(var(--ring-unit) / 2) 0;
-  border-top: 1px solid var(--ring-line-color);
-  border-bottom: 1px solid var(--ring-line-color);
+.picker__filter {
+  display: block;
+  margin: 0 calc(var(--ring-unit) * 2.5) var(--ring-unit);
+}
+
+.picker__tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--ring-unit) * 0.75);
+  max-height: 240px;
+  padding: calc(var(--ring-unit) / 2) calc(var(--ring-unit) * 2.5) var(--ring-unit);
+  overflow-y: auto;
+  outline: none;
+}
+
+.picker__tile {
+  padding: calc(var(--ring-unit) / 2) calc(var(--ring-unit) * 1.5);
+  border: 1px solid var(--ring-borders-color);
+  border-radius: var(--ring-border-radius);
+  background-color: var(--ring-sidebar-background-color);
+  color: var(--ring-text-color);
+  font-size: var(--ring-font-size-smaller);
+  line-height: var(--ring-line-height);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.1s, background-color 0.1s;
+}
+
+.picker__tile_active {
+  border-color: var(--youtrack-accent-color);
+  background-color: var(--ring-hover-background-color);
 }
 
 .picker__footer {
+  display: flex;
+  justify-content: flex-end;
   padding: calc(var(--ring-unit) * 1.5) calc(var(--ring-unit) * 2.5);
   border-top: none;
-}
-
-.picker__swatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
 }
 
 .rename__hint {
