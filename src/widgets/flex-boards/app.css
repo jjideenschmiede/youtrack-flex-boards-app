@@ -384,13 +384,18 @@ body {
 }
 
 .card__field {
-  color: var(--ring-text-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ring-secondary-color);
   white-space: nowrap;
 }
 
-.card__field_colored {
-  padding: 0 4px;
-  border-radius: var(--ring-border-radius-small);
+.card__field-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
 }
 
 .card__estimation {

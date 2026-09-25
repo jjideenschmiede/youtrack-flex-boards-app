@@ -121,10 +121,8 @@ const IssueCardComponent: React.FunctionComponent<Props> = ({
           const color = visibleColor(value?.color);
           return (
             <Tooltip key={name} title={name}>
-              <span
-                className={color ? 'card__field card__field_colored' : 'card__field'}
-                style={color ? {backgroundColor: color.background, color: color.foreground} : undefined}
-              >
+              <span className="card__field">
+                {color && <span className="card__field-dot" style={{backgroundColor: color.background}}/>}
                 {text}
               </span>
             </Tooltip>
