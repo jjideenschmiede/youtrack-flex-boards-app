@@ -1,7 +1,7 @@
 {
   "name": "youtrack-flex-boards-app",
   "private": true,
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "YouTrack app with an agile board view that asks for the exact state when a card is dropped into a merged column",
   "type": "module",
   "scripts": {

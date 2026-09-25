@@ -36,7 +36,7 @@ The App adds a Flex-Boards page to the YouTrack main menu that shows your existi
 
 ## Requirements
 
-- YouTrack 2026.1 or later
+- YouTrack 2026.2 or later
 
 ## Installation
 
