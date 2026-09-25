@@ -40,7 +40,7 @@ The App adds a Flex-Boards page to the YouTrack main menu that shows your existi
 
 ## Installation
 
-1. Download the latest release from the [marketplace](https://plugins.jetbrains.com/)
+1. Download the latest release from the [marketplace](https://plugins.jetbrains.com/plugin/34529)
 2. Go to the YouTrack Administration area
 3. Navigate to Apps
 4. Click "Upload app zip"
