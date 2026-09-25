@@ -3,7 +3,7 @@
   "name": "flex-boards",
   "title": "Flex-Boards",
   "description": "Agile board view with custom column names that asks for the exact state when a card is dropped into a merged column.",
-  "version": "1.0.7",
+  "version": "1.0.9",
   "vendor": {
     "name": "J&J Ideenschmiede GmbH",
     "url": "https://jj-ideenschmiede.de",

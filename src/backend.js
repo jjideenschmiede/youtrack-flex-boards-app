@@ -32,9 +32,16 @@ exports.httpHandler = {
       }
     },
     {
+      method: 'GET',
+      path: 'in-group',
+      handle: function handle(ctx) {
+        const groups = (ctx.request.getParameter('groups') || '').split('\n').filter(Boolean);
+        ctx.response.json({member: groups.some(group => ctx.currentUser.isInGroup(group))});
+      }
+    },
+    {
       method: 'POST',
       path: 'column-names',
-      permissions: EDIT_PERMISSIONS,
       handle: function handle(ctx) {
         const body = ctx.request.json();
         if (!body || typeof body.board !== 'string' || typeof body.column !== 'string') {

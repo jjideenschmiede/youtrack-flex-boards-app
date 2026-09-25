@@ -151,7 +151,15 @@ export async function loadColumnNames(host: HostAPI, boardId: string): Promise<C
   }
 }
 
-export async function loadCanEdit(host: HostAPI): Promise<boolean> {
+interface BoardSharing {
+  owner?: {login?: string} | null;
+  updateSharingSettings?: {
+    permittedUsers?: {login?: string}[];
+    permittedGroups?: {name?: string; allUsersGroup?: boolean}[];
+  } | null;
+}
+
+async function isAppAdmin(host: HostAPI): Promise<boolean> {
   try {
     const result = await withTimeout(
       host.fetchApp<{canEdit?: boolean}>('backend/can-edit', {}),
@@ -159,6 +167,46 @@ export async function loadCanEdit(host: HostAPI): Promise<boolean> {
       'backend/can-edit'
     );
     return result.canEdit === true;
+  } catch {
+    return false;
+  }
+}
+
+async function isInAnyGroup(host: HostAPI, names: string[]): Promise<boolean> {
+  if (names.length === 0) {
+    return false;
+  }
+  const result = await host.fetchApp<{member?: boolean}>('backend/in-group', {query: {groups: names.join('\n')}});
+  return result.member === true;
+}
+
+async function canEditBoardSettings(host: HostAPI, boardId: string, login: string): Promise<boolean> {
+  const board = await host.fetchYouTrack<BoardSharing>(`agiles/${boardId}`, {
+    query: {fields: 'owner(login),updateSharingSettings(permittedUsers(login),permittedGroups(name,allUsersGroup))'}
+  });
+  if (board.owner?.login === login) {
+    return true;
+  }
+  const sharing = board.updateSharingSettings;
+  if (sharing?.permittedUsers?.some(user => user.login === login)) {
+    return true;
+  }
+  const groups = sharing?.permittedGroups ?? [];
+  if (groups.some(group => group.allUsersGroup)) {
+    return true;
+  }
+  return isInAnyGroup(host, groups.map(group => group.name).filter((name): name is string => Boolean(name)));
+}
+
+export async function loadCanEdit(host: HostAPI, boardId: string, login: string | undefined): Promise<boolean> {
+  if (await isAppAdmin(host)) {
+    return true;
+  }
+  if (!login) {
+    return false;
+  }
+  try {
+    return await withTimeout(canEditBoardSettings(host, boardId, login), REQUEST_TIMEOUT_MS, 'board permissions');
   } catch (error) {
     console.info('[flex-boards] column renaming not available', error);
     return false;
