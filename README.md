@@ -30,7 +30,7 @@ The App adds a Flex-Boards page to the YouTrack main menu that shows your existi
 - Takes columns, WIP limits, swimlanes, color coding, estimation field and card fields from the selected agile board
 - State picker when a card is dropped into a combined column
 - Asks for required fields such as the resolution when a workflow demands them
-- Custom column names per board for app admins, board owners and everyone who can edit the board settings
+- Custom column names per board, editable by app admins
 - Card filter, collapsible swimlanes and opening issues in a new tab by double-click
 - User interface in English and German, based on the user's YouTrack language
 

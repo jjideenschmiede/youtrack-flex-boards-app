@@ -188,7 +188,7 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
   const [values, setValues] = useState<Record<string, ValueInfo>>({});
   const [columnNames, setColumnNames] = useState<ColumnNames>({});
   const [baseUrl, setBaseUrl] = useState(() => (document.referrer ? new URL(document.referrer).origin : ''));
-  const [editableBoard, setEditableBoard] = useState<string | null>(null);
+  const [canEdit, setCanEdit] = useState(false);
   const [cardFieldSetting, setCardFieldSetting] = useState<string[] | null>(null);
   const cardFieldsRequest = useRef<Promise<string[] | null>>(Promise.resolve(null));
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
@@ -214,18 +214,13 @@ const AppComponent: React.FunctionComponent<Props> = ({host}) => {
   const colorField = board?.colorCoding?.prototype?.name ?? null;
   const estimationField = board?.estimationField?.name ?? null;
 
-  const canEdit = editableBoard !== null && editableBoard === boardId;
-
   useEffect(() => {
-    if (!boardId) {
-      return undefined;
-    }
     let active = true;
-    loadCanEdit(host, boardId, YTApp.me?.login).then(allowed => active && setEditableBoard(allowed ? boardId : null));
+    loadCanEdit(host).then(allowed => active && setCanEdit(allowed));
     return () => {
       active = false;
     };
-  }, [host, boardId]);
+  }, [host]);
 
   const showError = useCallback((error: unknown, prefix?: string) => {
     const text = errorText(error);
